@@ -1,0 +1,47 @@
+name: Makefile CI
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 0 * * 0"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set-up git
+        run: |
+          git config --global user.name 'Updater'
+          git config --global user.email 'updater-bot@example.com'
+
+      - name: Pull from upstream
+        run: |
+          git remote add upstream "https://git.savannah.gnu.org/git/c-intro-and-ref.git"
+          git remote -v
+          git fetch upstream
+          git branch --set-upstream-to upstream/trunk trunk
+          git checkout trunk
+          git merge upstream/trunk --allow-unrelated-histories
+
+      - name: Push to this repo
+        run: |
+          git push origin trunk
+
+      - name: Install `texinfo`
+        run: sudo apt-get install -y  texinfo
+
+      - name: Build PDF
+        uses: xu-cheng/texlive-action/small@v1
+        with:
+          run: |
+            make c.pdf
+
+      - name: Save results of latest build
+        uses: actions/upload-artifact@v3
+        with:
+          name: upload-results
+          path: |
+            *.pdf
